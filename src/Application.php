@@ -2,20 +2,20 @@
 
 namespace Laravel\Lumen;
 
-use RuntimeException;
-use Illuminate\Support\Str;
+use Illuminate\Config\Repository as ConfigRepository;
+use Illuminate\Container\Container;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Http\Request;
 use Illuminate\Log\LogManager;
 use Illuminate\Support\Composer;
-use Laravel\Lumen\Routing\Router;
-use Illuminate\Container\Container;
-use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\ServiceProvider;
-use Zend\Diactoros\Response as PsrResponse;
-use Illuminate\Config\Repository as ConfigRepository;
+use Illuminate\Support\Str;
+use Laravel\Lumen\Routing\Router;
+use RuntimeException;
 use Symfony\Bridge\PsrHttpMessage\Factory\DiactorosFactory;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
+use Zend\Diactoros\Response as PsrResponse;
 
 class Application extends Container
 {
@@ -81,12 +81,12 @@ class Application extends Container
     /**
      * Create a new Lumen application instance.
      *
-     * @param  string|null  $basePath
+     * @param string|null $basePath
      * @return void
      */
     public function __construct($basePath = null)
     {
-        if (! empty(env('APP_TIMEZONE'))) {
+        if (!empty(env('APP_TIMEZONE'))) {
             date_default_timezone_set(env('APP_TIMEZONE', 'UTC'));
         }
 
@@ -149,7 +149,7 @@ class Application extends Container
     /**
      * Get or check the current application environment.
      *
-     * @param  mixed
+     * @param mixed
      * @return string
      */
     public function environment()
@@ -174,12 +174,12 @@ class Application extends Container
     /**
      * Register a service provider with the application.
      *
-     * @param  \Illuminate\Support\ServiceProvider|string  $provider
+     * @param \Illuminate\Support\ServiceProvider|string $provider
      * @return \Illuminate\Support\ServiceProvider
      */
     public function register($provider)
     {
-        if (! $provider instanceof ServiceProvider) {
+        if (!$provider instanceof ServiceProvider) {
             $provider = new $provider($this);
         }
 
@@ -201,7 +201,7 @@ class Application extends Container
     /**
      * Register a deferred provider and service.
      *
-     * @param  string  $provider
+     * @param string $provider
      * @return void
      */
     public function registerDeferredProvider($provider)
@@ -228,7 +228,7 @@ class Application extends Container
     /**
      * Boot the given service provider.
      *
-     * @param  \Illuminate\Support\ServiceProvider  $provider
+     * @param \Illuminate\Support\ServiceProvider $provider
      * @return mixed
      */
     protected function bootProvider(ServiceProvider $provider)
@@ -241,17 +241,17 @@ class Application extends Container
     /**
      * Resolve the given type from the container.
      *
-     * @param  string  $abstract
-     * @param  array  $parameters
+     * @param string $abstract
+     * @param array $parameters
      * @return mixed
      */
     public function make($abstract, array $parameters = [])
     {
         $abstract = $this->getAlias($abstract);
 
-        if (! $this->bound($abstract) &&
+        if (!$this->bound($abstract) &&
             array_key_exists($abstract, $this->availableBindings) &&
-            ! array_key_exists($this->availableBindings[$abstract], $this->ranServiceBinders)) {
+            !array_key_exists($this->availableBindings[$abstract], $this->ranServiceBinders)) {
             $this->{$method = $this->availableBindings[$abstract]}();
 
             $this->ranServiceBinders[$method] = true;
@@ -359,9 +359,25 @@ class Application extends Container
         $this->singleton('db', function () {
             return $this->loadComponent(
                 'database', [
-                    'Illuminate\Database\DatabaseServiceProvider',
-                    'Illuminate\Pagination\PaginationServiceProvider',
-                ], 'db'
+                'Illuminate\Database\DatabaseServiceProvider',
+                'Illuminate\Pagination\PaginationServiceProvider',
+            ], 'db'
+            );
+        });
+    }
+
+    /**
+     * Register container bindings for the application.
+     *
+     * @return void
+     */
+    protected function registerPaginationBindings()
+    {
+        $this->singleton('pagination', function () {
+            return $this->loadComponent(
+                'pagination', [
+                'Illuminate\Pagination\PaginationServiceProvider',
+            ], 'pagination'
             );
         });
     }
@@ -474,12 +490,12 @@ class Application extends Container
     /**
      * Prepare the given request instance for use with the application.
      *
-     * @param  \Symfony\Component\HttpFoundation\Request $request
+     * @param \Symfony\Component\HttpFoundation\Request $request
      * @return \Illuminate\Http\Request
      */
     protected function prepareRequest(SymfonyRequest $request)
     {
-        if (! $request instanceof Request) {
+        if (!$request instanceof Request) {
             $request = Request::createFromBase($request);
         }
 
@@ -541,10 +557,10 @@ class Application extends Container
      */
     protected function getLanguagePath()
     {
-        if (is_dir($langPath = $this->basePath().'/resources/lang')) {
+        if (is_dir($langPath = $this->basePath() . '/resources/lang')) {
             return $langPath;
         } else {
-            return __DIR__.'/../resources/lang';
+            return __DIR__ . '/../resources/lang';
         }
     }
 
@@ -589,16 +605,16 @@ class Application extends Container
     /**
      * Configure and load the given component and provider.
      *
-     * @param  string  $config
-     * @param  array|string  $providers
-     * @param  string|null  $return
+     * @param string $config
+     * @param array|string $providers
+     * @param string|null $return
      * @return mixed
      */
     public function loadComponent($config, $providers, $return = null)
     {
         $this->configure($config);
 
-        foreach ((array) $providers as $provider) {
+        foreach ((array)$providers as $provider) {
             $this->register($provider);
         }
 
@@ -608,7 +624,7 @@ class Application extends Container
     /**
      * Load a configuration file into the application.
      *
-     * @param  string  $name
+     * @param string $name
      * @return void
      */
     public function configure($name)
@@ -631,25 +647,25 @@ class Application extends Container
      *
      * If no name is provided, then we'll return the path to the config folder.
      *
-     * @param  string|null  $name
+     * @param string|null $name
      * @return string
      */
     public function getConfigurationPath($name = null)
     {
-        if (! $name) {
-            $appConfigDir = $this->basePath('config').'/';
+        if (!$name) {
+            $appConfigDir = $this->basePath('config') . '/';
 
             if (file_exists($appConfigDir)) {
                 return $appConfigDir;
-            } elseif (file_exists($path = __DIR__.'/../config/')) {
+            } elseif (file_exists($path = __DIR__ . '/../config/')) {
                 return $path;
             }
         } else {
-            $appConfigPath = $this->basePath('config').'/'.$name.'.php';
+            $appConfigPath = $this->basePath('config') . '/' . $name . '.php';
 
             if (file_exists($appConfigPath)) {
                 return $appConfigPath;
-            } elseif (file_exists($path = __DIR__.'/../config/'.$name.'.php')) {
+            } elseif (file_exists($path = __DIR__ . '/../config/' . $name . '.php')) {
                 return $path;
             }
         }
@@ -658,8 +674,8 @@ class Application extends Container
     /**
      * Register the facades for the application.
      *
-     * @param  bool  $aliases
-     * @param  array $userAliases
+     * @param bool $aliases
+     * @param array $userAliases
      * @return void
      */
     public function withFacades($aliases = true, $userAliases = [])
@@ -674,7 +690,7 @@ class Application extends Container
     /**
      * Register the aliases for the application.
      *
-     * @param  array  $userAliases
+     * @param array $userAliases
      * @return void
      */
     public function withAliases($userAliases = [])
@@ -694,7 +710,7 @@ class Application extends Container
             'Illuminate\Support\Facades\Validator' => 'Validator',
         ];
 
-        if (! static::$aliasesRegistered) {
+        if (!static::$aliasesRegistered) {
             static::$aliasesRegistered = true;
 
             $merged = array_merge($defaults, $userAliases);
@@ -716,31 +732,41 @@ class Application extends Container
     }
 
     /**
+     * Load the Pagination library for the application.
+     *
+     * @return void
+     */
+    public function withPagination()
+    {
+        $this->make('pagination');
+    }
+
+    /**
      * Get the path to the application "app" directory.
      *
      * @return string
      */
     public function path()
     {
-        return $this->basePath.DIRECTORY_SEPARATOR.'app';
+        return $this->basePath . DIRECTORY_SEPARATOR . 'app';
     }
 
     /**
      * Get the base path for the application.
      *
-     * @param  string|null  $path
+     * @param string|null $path
      * @return string
      */
     public function basePath($path = null)
     {
         if (isset($this->basePath)) {
-            return $this->basePath.($path ? '/'.$path : $path);
+            return $this->basePath . ($path ? '/' . $path : $path);
         }
 
         if ($this->runningInConsole()) {
             $this->basePath = getcwd();
         } else {
-            $this->basePath = realpath(getcwd().'/../');
+            $this->basePath = realpath(getcwd() . '/../');
         }
 
         return $this->basePath($path);
@@ -749,34 +775,34 @@ class Application extends Container
     /**
      * Get the path to the database directory.
      *
-     * @param  string  $path
+     * @param string $path
      * @return string
      */
     public function databasePath($path = '')
     {
-        return $this->basePath.DIRECTORY_SEPARATOR.'database'.($path ? DIRECTORY_SEPARATOR.$path : $path);
+        return $this->basePath . DIRECTORY_SEPARATOR . 'database' . ($path ? DIRECTORY_SEPARATOR . $path : $path);
     }
 
     /**
      * Get the storage path for the application.
      *
-     * @param  string|null  $path
+     * @param string|null $path
      * @return string
      */
     public function storagePath($path = '')
     {
-        return $this->basePath().'/storage'.($path ? '/'.$path : $path);
+        return $this->basePath() . '/storage' . ($path ? '/' . $path : $path);
     }
 
     /**
      * Get the path to the resources directory.
      *
-     * @param  string|null  $path
+     * @param string|null $path
      * @return string
      */
     public function resourcePath($path = '')
     {
-        return $this->basePath.DIRECTORY_SEPARATOR.'resources'.($path ? DIRECTORY_SEPARATOR.$path : $path);
+        return $this->basePath . DIRECTORY_SEPARATOR . 'resources' . ($path ? DIRECTORY_SEPARATOR . $path : $path);
     }
 
     /**
@@ -812,7 +838,7 @@ class Application extends Container
     /**
      * Prepare the application to execute a console command.
      *
-     * @param  bool  $aliases
+     * @param bool $aliases
      * @return void
      */
     public function prepareForConsoleCommand($aliases = true)
@@ -837,15 +863,15 @@ class Application extends Container
      */
     public function getNamespace()
     {
-        if (! is_null($this->namespace)) {
+        if (!is_null($this->namespace)) {
             return $this->namespace;
         }
 
         $composer = json_decode(file_get_contents(base_path('composer.json')), true);
 
-        foreach ((array) data_get($composer, 'autoload.psr-4') as $namespace => $path) {
-            foreach ((array) $path as $pathChoice) {
-                if (realpath(app()->path()) == realpath(base_path().'/'.$pathChoice)) {
+        foreach ((array)data_get($composer, 'autoload.psr-4') as $namespace => $path) {
+            foreach ((array)$path as $pathChoice) {
+                if (realpath(app()->path()) == realpath(base_path() . '/' . $pathChoice)) {
                     return $this->namespace = $namespace;
                 }
             }
@@ -934,6 +960,7 @@ class Application extends Container
         'composer' => 'registerComposerBindings',
         'config' => 'registerConfigBindings',
         'db' => 'registerDatabaseBindings',
+        'pagination' => 'registerPaginationBindings',
         'Illuminate\Database\Eloquent\Factory' => 'registerDatabaseBindings',
         'filesystem' => 'registerFilesystemBindings',
         'Illuminate\Contracts\Filesystem\Factory' => 'registerFilesystemBindings',
